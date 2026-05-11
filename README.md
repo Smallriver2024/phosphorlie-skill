@@ -13,6 +13,7 @@ modification site validation, and multi-entity formatting before output.
 
 Supports: **phosphorylation**, **acetylation**, **ubiquitination**, **SUMOylation**,
 **methylation**, **glycosylation**, and other PTMs.
+<img width="1448" height="1086" alt="Fig1" src="https://github.com/user-attachments/assets/1b14428a-1a1d-4279-b775-21b43961c908" />
 
 ---
 
