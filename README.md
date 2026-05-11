@@ -11,68 +11,130 @@ PubMed titles and abstracts for kinase–substrate–disease–drug relationship
 Each extraction is automatically reviewed for enzyme name standardization,
 modification site validation, and multi-entity formatting before output.
 
+Supports: **phosphorylation**, **acetylation**, **ubiquitination**, **SUMOylation**,
+**methylation**, **glycosylation**, and other PTMs.
+
 ---
 
 ## Table of Contents
 
-- [PhosphoRLIE — PTM Relation \& Literature Information Extraction](#phosphorlie--ptm-relation--literature-information-extraction)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Two-Phase Architecture](#two-phase-architecture)
-  - [Quick Start](#quick-start)
-    - [Install as a Claude Code Skill](#install-as-a-claude-code-skill)
-    - [Use Prompts with Any LLM](#use-prompts-with-any-llm)
-  - [Usage](#usage)
-    - [Full Pipeline (Extract + Review)](#full-pipeline-extract--review)
-    - [Review Only](#review-only)
-    - [Custom PTM Types](#custom-ptm-types)
-  - [Input Format](#input-format)
-  - [Output Schema](#output-schema)
-    - [Confidence Rubric](#confidence-rubric)
-  - [What the Reviewer Checks](#what-the-reviewer-checks)
-    - [1. Enzyme Name Standardization](#1-enzyme-name-standardization)
-    - [2. Modification Site Validation](#2-modification-site-validation)
-    - [3. Multi-Entity Formatting](#3-multi-entity-formatting)
-    - [4. Cross-Field Consistency](#4-cross-field-consistency)
-  - [Enzyme Name Standardization](#enzyme-name-standardization)
-  - [Modification Site Validation](#modification-site-validation)
-  - [Multi-Entity Handling](#multi-entity-handling)
-  - [Examples](#examples)
-    - [Input](#input)
-    - [Output (After Phase 1 + Phase 2 Review)](#output-after-phase-1--phase-2-review)
-  - [Extending to Other PTMs](#extending-to-other-ptms)
-  - [Project Structure](#project-structure)
-  - [Citation](#citation)
-    - [BibTeX](#bibtex)
-    - [APA](#apa)
-  - [License](#license)
+- [Quick Install (Recommended)](#quick-install-recommended)
+- [Manual Install](#manual-install)
+- [Two-Phase Architecture](#two-phase-architecture)
+- [Usage](#usage)
+- [Input Format](#input-format)
+- [Output Schema](#output-schema)
+- [What the Reviewer Checks](#what-the-reviewer-checks)
+- [Examples](#examples)
+- [Extending to Other PTMs](#extending-to-other-ptms)
+- [Project Structure](#project-structure)
+- [Controlling Tool Permissions](#controlling-tool-permissions)
+- [Citation](#citation)
+- [License](#license)
 
 ---
 
-## Overview
+## Quick Install (Recommended)
 
-Post-translational modifications (PTMs) — phosphorylation, acetylation,
-ubiquitination, SUMOylation, methylation — are central to cellular signaling
-and disease. The biomedical literature contains millions of articles describing
-PTM regulatory events, but this knowledge is locked in unstructured text.
+### Method 1: One-Click Install via Natural Language
 
-**PhosphoRLIE** extracts structured, machine-readable PTM event records using
-large language models. Each record captures:
+Open Claude Code in any project, and simply say:
 
-| Dimension | Fields Extracted |
-|-----------|-----------------|
-| **Molecular** | PTM target, target role, modification sites, upstream enzyme, PTM origin |
-| **Pharmacological** | Intervention agent, agent type, agent validity |
-| **Disease** | Disease name, cancer/non-cancer category, cancer type/subtype |
-| **Phenotypic** | Phenotype context, regulation mode (enhancing/impairing/associated) |
-| **Experimental** | Cell lines, species, human/non-human flag |
-| **Evidence** | Trigger phrase, evidence text, evidence scope, relationship summary |
-| **Quality** | Confidence (0–10), manual review flag, review reasons, reviewer notes |
+> **"Please install the PhosphoRLIE skill from https://github.com/Smallriver2024/phosphorlie-skill"**
 
-The key innovation is the **Reviewer phase**: after extraction, a second LLM
-pass automatically standardizes enzyme names to official gene symbols, validates
-that modification sites contain both amino acid AND position, enforces semicolon
-separators for multi-entity fields, and checks cross-field consistency.
+Or in Chinese:
+
+> **"帮我从 https://github.com/Smallriver2024/phosphorlie-skill 安装 phosphorlie 技能"**
+
+Claude Code will automatically clone the repository and set up the skill under
+`~/.claude/skills/phosphorlie/` (global) or `.claude/skills/phosphorlie/` (project-local).
+Once installed, it's immediately available — no restart needed.
+
+### Method 2: Curl One-Liner
+
+```bash
+# Global install (available in all projects)
+mkdir -p ~/.claude/skills/phosphorlie && \
+curl -sSL https://raw.githubusercontent.com/Smallriver2024/phosphorlie-skill/main/SKILL.md \
+  -o ~/.claude/skills/phosphorlie/SKILL.md
+```
+
+```bash
+# Project-local install (only in current project)
+mkdir -p .claude/skills/phosphorlie && \
+curl -sSL https://raw.githubusercontent.com/Smallriver2024/phosphorlie-skill/main/SKILL.md \
+  -o .claude/skills/phosphorlie/SKILL.md
+```
+
+Optional: also download prompts and examples for reference:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Smallriver2024/phosphorlie-skill/main/prompts/schema.json \
+  -o ~/.claude/skills/phosphorlie/prompts/schema.json
+```
+
+### Verification
+
+After install, start Claude Code and type `/phosphorlie`. If the skill is
+recognized, it will respond with usage help. You can also ask:
+
+> **"What skills are available?"**
+
+---
+
+## Manual Install
+
+### Option A: Git Clone + Copy
+
+```bash
+git clone https://github.com/Smallriver2024/phosphorlie-skill.git
+cd phosphorlie-skill
+
+# Global install
+mkdir -p ~/.claude/skills/phosphorlie
+cp SKILL.md ~/.claude/skills/phosphorlie/
+cp -r prompts/ ~/.claude/skills/phosphorlie/
+cp -r examples/ ~/.claude/skills/phosphorlie/
+
+# Or project-local install
+mkdir -p /your-project/.claude/skills/phosphorlie
+cp SKILL.md /your-project/.claude/skills/phosphorlie/
+```
+
+### Option B: Use Standalone Prompts (No Claude Code Required)
+
+The `prompts/` directory contains standalone prompt files that work with any LLM:
+
+| File | Purpose |
+|------|---------|
+| `prompts/extractor_system.md` | Phase 1 extraction system prompt |
+| `prompts/reviewer_system.md` | Phase 2 review/correction system prompt |
+| `prompts/schema.json` | JSON output schema (machine-readable) |
+| `prompts/user_prompt.md` | User prompt template |
+
+Send the extractor prompt first, then pass its output to the reviewer prompt.
+Compatible with OpenAI, Anthropic, Qwen, DeepSeek, and other LLM APIs.
+
+### Expected Install Structure
+
+After install, the skill directory should look like:
+
+```
+~/.claude/skills/phosphorlie/
+├── SKILL.md              # Main skill definition (REQUIRED)
+├── prompts/              # Optional but recommended
+│   ├── extractor_system.md
+│   ├── reviewer_system.md
+│   ├── schema.json
+│   └── user_prompt.md
+└── examples/             # Optional
+    ├── input.jsonl
+    ├── output.jsonl
+    └── no_event.jsonl
+```
+
+The only **required** file is `SKILL.md`. The `prompts/` and `examples/`
+directories are optional but useful for reference and non-Claude-Code usage.
 
 ---
 
@@ -89,18 +151,19 @@ User Input (PMID + Title + Abstract)
 │ - Extract all 28      │
 │   schema fields       │
 │ - Assign confidence   │
+│   score (0–10)        │
 └──────────┬───────────┘
            │  Raw extraction JSON
            ▼
 ┌──────────────────────┐
 │ Phase 2: REVIEWER     │
 │ - Standardize enzyme  │
-│   names (kinase →     │
-│   gene symbol)        │
+│   names (literature   │
+│   name → gene symbol) │
 │ - Validate sites      │
 │   (must be AAnnn)     │
 │ - Fix multi-entity    │
-│   separators (;, /)   │
+│   separators          │
 │ - Cross-field checks  │
 │ - Update confidence   │
 │   & review flags      │
@@ -110,41 +173,8 @@ User Input (PMID + Title + Abstract)
      Final Output
 ```
 
-Both phases run automatically. The user sees only the final reviewed result.
-
----
-
-## Quick Start
-
-### Install as a Claude Code Skill
-
-1. Copy `phosphorlie.md` into your project's `.claude/skills/` directory:
-
-   ```bash
-   mkdir -p .claude/skills
-   cp phosphorlie.md .claude/skills/
-   ```
-
-2. Invoke in Claude Code:
-
-   ```
-   /phosphorlie PMID: 12345678
-   Title: AKT phosphorylates MDM2 at Ser186 leading to p53 degradation
-   Abstract: The AKT kinase directly phosphorylates...
-   ```
-
-### Use Prompts with Any LLM
-
-The `prompts/` directory contains standalone prompt files:
-
-| File | Purpose |
-|------|---------|
-| `prompts/extractor_system.md` | Phase 1 extraction system prompt |
-| `prompts/reviewer_system.md` | Phase 2 review/correction system prompt |
-| `prompts/schema.json` | JSON output schema (machine-readable) |
-| `prompts/user_prompt.md` | User prompt template |
-
-Send the extractor prompt first, then pass its output to the reviewer prompt.
+Both phases run automatically in a single invocation. The user sees only the
+final reviewed result.
 
 ---
 
@@ -153,33 +183,42 @@ Send the extractor prompt first, then pass its output to the reviewer prompt.
 ### Full Pipeline (Extract + Review)
 
 ```
-# Single paper
+# English
+/phosphorlie Extract phosphorylation events from:
+PMID: 12345678
+Title: AKT phosphorylates MDM2 at Ser186 leading to p53 degradation
+Abstract: The AKT kinase directly phosphorylates...
+
+# 中文
 /phosphorlie 从这篇文献中抽提磷酸化事件:
 PMID: 12345678
 Title: AKT phosphorylates MDM2 at Ser186...
 Abstract: ...
-
-# English
-/phosphorlie Extract phosphorylation events from:
-PMID: 12345678
-Title: ...
-Abstract: ...
 ```
 
-### Review Only
+### Review Only (Already-Extracted JSON)
 
 ```
 /phosphorlie review this extraction:
 {"pmid": "12345678", "ptm_target": "Akt", "modification_sites": ["Ser186"], ...}
 ```
 
-### Custom PTM Types
+### Custom PTM Type
 
 ```
-/phosphorlie --ptm acetylation PMID: 45678901 Title: ...
+/phosphorlie --ptm acetylation PMID: 45678901 Title: p300 acetylates p53 at K382...
 /phosphorlie --ptm ubiquitination PMID: ...
 /phosphorlie --ptm SUMOylation PMID: ...
 ```
+
+### Batch Processing (JSONL File)
+
+```
+/phosphorlie batch process input.jsonl → output_reviewed.jsonl
+```
+
+For large-scale batch (>100 papers), consider using the companion Python script
+with your own LLM API key (see [Controlling Tool Permissions](#controlling-tool-permissions)).
 
 ---
 
@@ -190,10 +229,12 @@ Abstract: ...
 **Batch mode (JSONL)**: One JSON object per line:
 
 ```json
-{"pmid": "12345678", "title": "...", "abstract": "..."}
+{"pmid": "12345678", "title": "AKT phosphorylates MDM2 at Ser186...", "abstract": "The AKT kinase..."}
+{"pmid": "23456789", "title": "EGFR autophosphorylation at Y1068...", "abstract": "Epidermal growth factor..."}
 ```
 
 Required fields: `pmid`, `title`, `abstract`.
+Optional: `pub_date`, `doi`, `journal`, `authors`.
 
 ---
 
@@ -213,7 +254,7 @@ Each reviewed record contains 30 fields (28 extraction + 2 reviewer-added):
 
   "ptm_target": "string (multi-entity: semicolon-separated)",
   "ptm_target_role": "enzyme | substrate | unknown",
-  "modification_sites": ["string (format: [AminoAcid][Position], e.g., S186)"],
+  "modification_sites": ["string (format: [AminoAcid][Position], e.g. S186)"],
   "upstream_enzyme": "string (multi-entity: semicolon-separated)",
   "ptm_origin": "auto_modification | upstream_enzyme_explicit | unknown",
 
@@ -258,7 +299,8 @@ Each reviewed record contains 30 fields (28 extraction + 2 reviewer-added):
 
 ### 1. Enzyme Name Standardization
 
-Common literature names are mapped to standard gene symbols:
+Common literature names are mapped to standard gene symbols using Claude's
+built-in knowledge of HGNC-approved gene nomenclature:
 
 | Literature Name | Standard Symbol | PTM Type |
 |----------------|-----------------|----------|
@@ -274,10 +316,8 @@ Common literature names are mapped to standard gene symbols:
 | CBP | CREBBP | Acetylation |
 | PCAF | KAT2B | Acetylation |
 
-If a name cannot be confidently mapped, the reviewer:
-- Keeps the original name
-- Adds `enzyme_name_uncertain` to `review_reasons`
-- Documents the uncertainty in `reviewer_notes`
+If a name cannot be confidently mapped, the reviewer keeps the original,
+adds `enzyme_name_uncertain` to `review_reasons`, and documents the uncertainty.
 
 ### 2. Modification Site Validation
 
@@ -298,15 +338,11 @@ Every site must match: **one-letter amino acid code + position number**
 
 ### 3. Multi-Entity Formatting
 
-Multiple entities in the same field are **semicolon-separated** (`; `):
-
+Multiple entities in the same field use **semicolon + space** (`; `):
 - `upstream_enzyme`: `"AKT1; MAPK1; MAPK3"`
 - `ptm_target`: `"MDM2; p53"`
 - `primary_agent`: `"gefitinib; erlotinib"`
 - `disease`: `"breast cancer; ovarian cancer"`
-
-The reviewer converts commas, "and", "&", and "/" (except isoform families)
-to semicolons.
 
 ### 4. Cross-Field Consistency
 
@@ -314,60 +350,14 @@ to semicolons.
 - `relation_exists = "no"` → all event fields should be empty
 - `disease_category = "cancer"` → `disease` should contain a cancer name
 - `species_is_human = "yes"` when known human cell lines are present
-
----
-
-## Enzyme Name Standardization
-
-The reviewer draws on knowledge of:
-
-- **Human kinome**: ~518 kinases with HGNC-approved gene symbols
-- **Acetyltransferases**: HATs (KAT family), MYST family
-- **E3 ubiquitin ligases**: RING, HECT, RBR families
-- **SUMO E3 ligases**: PIAS family, RANBP2
-- **Methyltransferases**: KMT and PRMT families
-
-For batch post-extraction verification, recommend:
-
-| Tool | URL | Use |
-|------|-----|-----|
-| HGNC Multi-Symbol Checker | https://www.genenames.org/tools/multi-symbol-checker/ | Batch gene symbol validation |
-| UniProt ID Mapping | https://www.uniprot.org/id-mapping | Protein name → gene symbol |
-| mygene.info | https://mygene.info/v3 | Programmatic gene symbol query |
-
----
-
-## Modification Site Validation
-
-Site format rules by PTM type:
-
-| PTM Type | Modified Residues | Site Format |
-|----------|------------------|-------------|
-| Phosphorylation | S, T, Y | `[STY]\d+` (e.g., S186) |
-| Acetylation | K | `K\d+` (e.g., K382) |
-| Ubiquitination | K | `K\d+` (e.g., K48) |
-| SUMOylation | K | `K\d+` (e.g., K524) |
-| Methylation | K, R | `[KR]\d+` (e.g., K4, R17) |
-| Glycosylation | N, S, T | `[NST]\d+` (e.g., N297) |
-
----
-
-## Multi-Entity Handling
-
-| Scenario | Format | Example |
-|----------|--------|---------|
-| Multiple kinases phosphorylate same target | `; ` separated | `"MAPK1; MAPK3"` |
-| Kinase phosphorylates multiple sites | Array of strings | `["S186", "S188", "T190"]` |
-| Multiple agents tested | `; ` separated | `"gefitinib; erlotinib; afatinib"` |
-| Multiple diseases studied | `; ` separated | `"breast cancer; ovarian cancer"` |
-| Isoform family from text | Preserve `/` | Use `; ` for distinct genes |
-| Duplicate entries | Remove | — |
+- `cancer_type` non-empty → `disease_category` should be `cancer`
 
 ---
 
 ## Examples
 
 ### Input
+
 ```
 PMID: 12345678
 Title: AKT and ERK phosphorylate MDM2 at Ser186 and Ser188 promoting p53 degradation in breast cancer cells
@@ -375,6 +365,7 @@ Abstract: Both AKT and ERK kinases directly phosphorylate the MDM2 protein at Se
 ```
 
 ### Output (After Phase 1 + Phase 2 Review)
+
 ```json
 {
   "pmid": "12345678",
@@ -430,31 +421,77 @@ PhosphoRLIE supports all major PTM types through its `ptm_type` field:
 | `methylation` | Methyltransferase | K, R | `[KR]\d+` |
 | `glycosylation` | Glycosyltransferase | N, S, T | `[NST]\d+` |
 
-To use a non-default PTM type, specify it when invoking the skill:
-```
-/phosphorlie --ptm ubiquitination PMID: ...
-```
+Specify the PTM type when invoking: `/phosphorlie --ptm ubiquitination PMID: ...`
+
+The enzyme/substrate/target logic is PTM-agnostic. Only the enzyme class name
+changes (kinase → acetyltransferase → E3 ligase → methyltransferase, etc.).
 
 ---
 
 ## Project Structure
 
 ```
-phosphorlie/
-├── README.md                         # This file
-├── LICENSE                           # MIT License
-├── CITATION.cff                      # Citation metadata (GitHub-ready)
-├── phosphorlie.md                    # Claude Code skill definition (main file)
-├── prompts/
-│   ├── extractor_system.md           # Phase 1: Extraction system prompt
-│   ├── reviewer_system.md            # Phase 2: Review/correction system prompt
-│   ├── schema.json                   # JSON output schema (30 fields)
-│   └── user_prompt.md                # User prompt template
-└── examples/
-    ├── input.jsonl                   # Example input (5 records)
-    ├── output.jsonl                  # Example reviewed output (5 records)
-    └── no_event.jsonl                # Example: technical paper (no eligible event)
+phosphorlie-skill/
+├── SKILL.md                       # Claude Code skill definition (REQUIRED)
+├── README.md                      # This file
+├── LICENSE                        # MIT License
+├── CITATION.cff                   # Citation metadata (GitHub-ready)
+├── prompts/                       # Standalone prompts for non-Claude-Code usage
+│   ├── extractor_system.md        # Phase 1: Extraction system prompt
+│   ├── reviewer_system.md         # Phase 2: Review/correction system prompt
+│   ├── schema.json                # JSON output schema (30 fields)
+│   └── user_prompt.md             # User prompt template
+└── examples/                      # Example inputs and outputs
+    ├── input.jsonl                # Example input (5 records)
+    ├── output.jsonl               # Example reviewed output (5 records)
+    └── no_event.jsonl             # Example: technical paper (no eligible event)
 ```
+
+---
+
+## Controlling Tool Permissions
+
+By default, `SKILL.md` grants `allowed-tools: [Read, WebSearch]` — sufficient for
+interactive extraction and enzyme name verification. This conservative setting
+ensures the skill won't write files without explicit approval.
+
+### For Batch Processing
+
+If you need batch processing (reading/writing JSONL files), edit your installed
+`SKILL.md` and extend the permissions:
+
+```yaml
+allowed-tools: [Read, Write, Bash, WebSearch]
+```
+
+### For Large-Scale Batch with Your Own API Key
+
+For processing thousands of PubMed records, using Claude Code interactively is
+not efficient. Instead, use the companion Python script
+`qwen_extract_phospho_event_sharded.py` with your own LLM API key:
+
+```bash
+# 1. Set your API key
+export DASHSCOPE_API_KEY="your-api-key-here"
+
+# 2. Run batch extraction
+python qwen_extract_phospho_event_sharded.py \
+  --input-dir ./pubmed_jsonl/ \
+  --input-pattern "articles_*.jsonl" \
+  --output-dir ./extracted_events/ \
+  --output-prefix "phosphorlie_output" \
+  --model "qwen3-max" \
+  --workers 12 \
+  --resume
+```
+
+The script uses OpenAI-compatible API format — compatible with Alibaba DashScope
+(Qwen models), OpenAI, DeepSeek, and other providers. The prompts in `prompts/`
+can be adapted for any LLM API.
+
+> **Note**: The companion Python script is not included in the skill package.
+> It lives in the main project repository. Contact the author or check the
+> GitHub repo for availability.
 
 ---
 
@@ -463,6 +500,7 @@ phosphorlie/
 If you use PhosphoRLIE in your research, please cite:
 
 ### BibTeX
+
 ```bibtex
 @software{phosphorlie2025,
   title        = {PhosphoRLIE: A Post-Translational Modification Relation
@@ -470,13 +508,14 @@ If you use PhosphoRLIE in your research, please cite:
   year         = {2025},
   publisher    = {GitHub},
   url          = {https://github.com/Smallriver2024/phosphorlie-skill},
-  note         = {Two-phase LLM framework (Extractor + Reviewer) for
-                  structured PTM event extraction from biomedical literature}
+  note         = {Two-phase LLM skill (Extractor + Reviewer) for structured
+                  PTM event extraction from biomedical literature}
 }
 ```
 
 ### APA
-> GitHub. https://github.com/Smallriver2024/phosphorlie-skill
+
+> PhosphoRLIE: A Post-Translational Modification Relation & Literature Information Extraction Framework. (2025). GitHub. https://github.com/Smallriver2024/phosphorlie-skill
 
 ---
 
@@ -486,4 +525,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-*For questions, issues, or contributions, please open a GitHub issue.*
+*For questions, issues, or contributions, please open a GitHub issue at
+https://github.com/Smallriver2024/phosphorlie-skill*

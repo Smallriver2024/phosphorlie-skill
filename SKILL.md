@@ -1,14 +1,18 @@
 ---
 name: phosphorlie
 description: >-
-  Extract and review post-translational modification (PTM) regulatory events from
-  biomedical literature. Two-phase workflow: (1) Extractor — pull ONE structured
-  PTM event per paper from PubMed titles/abstracts; (2) Reviewer — standardize
-  enzyme names, validate modification sites, handle multi-entity formatting, and
-  flag quality issues. Supports phosphorylation, acetylation, ubiquitination,
-  SUMOylation, methylation, and other PTMs.
+  Use this skill whenever the user asks to extract phosphorylation, kinase-substrate,
+  PTM regulation, disease-drug-phenotype relations, or any post-translational
+  modification (PTM) events from PubMed titles and abstracts. Two-phase workflow:
+  (1) Extractor — pull ONE structured PTM event per paper from PubMed titles/abstracts;
+  (2) Reviewer — standardize enzyme names to official gene symbols, validate modification
+  site format (one-letter AA code + position), enforce semicolon separators for
+  multi-entity fields, and flag quality issues. Supports phosphorylation, acetylation,
+  ubiquitination, SUMOylation, methylation, glycosylation, and other PTMs. Works in
+  interactive mode (single paper), batch mode (JSONL file), review-only mode, and
+  custom PTM type mode.
 tags: [biomedical, literature-mining, ptm, phosphorylation, nlp, bioinformatics, quality-control]
-allowed-tools: [Read, Write, Bash, WebSearch]
+allowed-tools: [Read, WebSearch]
 ---
 
 # PhosphoRLIE — PTM Relation & Literature Information Extraction
