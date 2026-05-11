@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use PhosphoRLIE in your research, please cite it as follows."
+title: "Kinase MD 2.0"
+authors:
+  - family-names: "Hu"
+    given-names: "Xiaojiang"
+repository-code: "https://github.com/Smallriver2024/phosphorlie-skill"
+url: "https://github.com/Smallriver2024/phosphorlie-skill"
+abstract: >-
+  PhosphoRLIE is an LLM-based framework and Claude Code skill for structured
+  extraction of post-translational modification (PTM) regulatory events from
+  biomedical literature. It extracts kinase-substrate-disease-drug relationships
+  from PubMed titles and abstracts into richly annotated JSON records with
+  confidence scoring and quality control flags.
+keywords:
+  - post-translational modification
+  - phosphorylation
+  - literature mining
+  - large language model
+  - bioinformatics
+  - text extraction
+  - PubMed
+license: MIT
+version: "1.0.0"
+date-released: "2025-05-11"

@@ -1,0 +1,219 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "description": "PhosphoRLIE extraction schema — one PTM regulatory event per record",
+  "properties": {
+    "pmid": {
+      "type": "string",
+      "description": "PubMed ID of the source article"
+    },
+    "record": {
+      "type": "string",
+      "description": "Record identifier (for multi-event articles; empty string for single-record)"
+    },
+    "ptm_type": {
+      "type": "string",
+      "enum": [
+        "phosphorylation",
+        "acetylation",
+        "ubiquitination",
+        "SUMOylation",
+        "methylation",
+        "glycosylation",
+        "other_ptm",
+        "unknown"
+      ],
+      "description": "Type of post-translational modification"
+    },
+    "relation_exists": {
+      "type": "string",
+      "enum": ["yes", "no", "unclear"],
+      "description": "Whether an eligible PTM regulatory relation exists in the text"
+    },
+
+    "evidence_text": {
+      "type": "string",
+      "description": "The exact sentence(s) providing evidence for the PTM event"
+    },
+    "evidence_scope": {
+      "type": "string",
+      "enum": ["single_sentence", "sentence_pair", "title_plus_abstract", "unknown"],
+      "description": "Scope of the evidence text"
+    },
+
+    "ptm_target": {
+      "type": "string",
+      "description": "The focal protein that undergoes PTM in this event"
+    },
+    "ptm_target_role": {
+      "type": "string",
+      "enum": ["enzyme", "substrate", "unknown"],
+      "description": "Whether the PTM target acts as an enzyme or substrate in this event"
+    },
+    "modification_sites": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "PTM modification sites (e.g., ['S186', 'Y490'] for phosphorylation, ['K382'] for acetylation)"
+    },
+    "upstream_enzyme": {
+      "type": "string",
+      "description": "The upstream enzyme that catalyzes the PTM (if explicitly stated for the same focal event)"
+    },
+    "ptm_origin": {
+      "type": "string",
+      "enum": ["auto_modification", "upstream_enzyme_explicit", "unknown"],
+      "description": "Origin of the PTM: self-modification, catalyzed by an upstream enzyme, or unknown"
+    },
+
+    "primary_agent": {
+      "type": "string",
+      "description": "The primary intervention agent (drug, compound, antibody, etc.)"
+    },
+    "agent_validity": {
+      "type": "string",
+      "enum": [
+        "valid_intervention",
+        "assay_reagent",
+        "detection_antibody",
+        "supporting_reagent",
+        "unknown"
+      ],
+      "description": "Whether the agent is a valid intervention or an assay/detection material"
+    },
+    "agent_type": {
+      "type": "string",
+      "enum": [
+        "approved_drug",
+        "investigational_drug",
+        "tool_compound",
+        "antibody",
+        "biologic",
+        "peptide",
+        "extract_mixture",
+        "other_reagent",
+        "unknown"
+      ],
+      "description": "Category of the intervention agent"
+    },
+
+    "disease": {
+      "type": "string",
+      "description": "Disease entity explicitly stated in the text"
+    },
+    "disease_category": {
+      "type": "string",
+      "enum": ["cancer", "non_cancer", "unclear"],
+      "description": "Broad disease category"
+    },
+    "cancer_type": {
+      "type": "string",
+      "description": "Broad cancer type when applicable (e.g., 'breast cancer', 'lung cancer')"
+    },
+    "cancer_subtype": {
+      "type": "string",
+      "description": "Specific cancer subtype only when explicitly stated (e.g., 'lung adenocarcinoma', 'TNBC')"
+    },
+    "phenotype_context": {
+      "type": "string",
+      "description": "Phenotype or biological process context (e.g., 'apoptosis', 'migration', 'proliferation')"
+    },
+
+    "cell_lines": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Cell lines used in the experiment"
+    },
+    "species": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Species studied (e.g., ['human', 'mouse'])"
+    },
+    "species_is_human": {
+      "type": "string",
+      "enum": ["yes", "no", "unknown"],
+      "description": "Whether the study involves human samples"
+    },
+
+    "trigger_phrase": {
+      "type": "string",
+      "description": "Original phrase from text indicating the PTM regulatory relation"
+    },
+    "regulation_mode": {
+      "type": "string",
+      "enum": ["enhancing", "impairing", "associated"],
+      "description": "Whether the PTM event enhances, impairs, or is associated with the effect"
+    },
+    "relationship": {
+      "type": "string",
+      "description": "Human-readable summary of the complete PTM-regulatory relationship"
+    },
+
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Confidence score: 9-10 explicit, 7-8 strong, 5-6 probable, 3-4 weak, 0-2 unsupported"
+    },
+    "needs_manual_review": {
+      "type": "string",
+      "enum": ["yes", "no"],
+      "description": "Whether this record requires manual expert review"
+    },
+    "review_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "missing_entity",
+          "unclear_direction",
+          "missing_site",
+          "missing_cell_line",
+          "multi_entity_ambiguity",
+          "weak_evidence",
+          "agent_role_unclear",
+          "technical_assay_only",
+          "enzyme_name_uncertain",
+          "site_format_invalid",
+          "other"
+        ]
+      },
+      "description": "Specific reasons why manual review is needed"
+    },
+
+    "reviewer_notes": {
+      "type": "string",
+      "description": "Semicolon-separated list of corrections made during the review phase"
+    }
+  },
+  "required": [
+    "pmid",
+    "record",
+    "ptm_type",
+    "relation_exists",
+    "evidence_text",
+    "evidence_scope",
+    "ptm_target",
+    "ptm_target_role",
+    "modification_sites",
+    "upstream_enzyme",
+    "ptm_origin",
+    "primary_agent",
+    "agent_validity",
+    "agent_type",
+    "disease",
+    "disease_category",
+    "cancer_type",
+    "cancer_subtype",
+    "phenotype_context",
+    "cell_lines",
+    "species",
+    "species_is_human",
+    "trigger_phrase",
+    "regulation_mode",
+    "relationship",
+    "confidence",
+    "needs_manual_review",
+    "review_reasons",
+    "reviewer_notes"
+  ]
+}
